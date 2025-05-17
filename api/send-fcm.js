@@ -1,13 +1,7 @@
 const { google } = require('googleapis');
-const fs = require('fs');
-const path = require('path');
-
-// Load service account JSON from file
-const serviceAccountPath = path.join(__dirname, 'service-account.json');
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 
 // Helper to get Google OAuth2 access token
-async function getAccessToken() {
+async function getAccessToken(serviceAccount) {
   const jwtClient = new google.auth.JWT(
     serviceAccount.client_email,
     null,
@@ -50,8 +44,17 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // Read service account from environment variable
+  let serviceAccount;
   try {
-    const accessToken = await getAccessToken();
+    serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_JSON);
+  } catch (e) {
+    res.status(500).json({ error: 'Invalid SERVICE_ACCOUNT_JSON env variable' });
+    return;
+  }
+
+  try {
+    const accessToken = await getAccessToken(serviceAccount);
     const message = {
       message: {
         token: fcmToken,
